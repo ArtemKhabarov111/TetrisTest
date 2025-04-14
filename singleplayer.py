@@ -1,5 +1,6 @@
 from os import path, getcwd
 from random import choice
+import db_manager
 
 # components
 from game import Game
@@ -12,6 +13,7 @@ class Main:
     def __init__(self):
         # general
         pygame.init()
+        db_manager.initialize_db()
         self.display_surface = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.clock = pygame.time.Clock()
         pygame.display.set_caption("Singleplayer Tetris")
@@ -51,6 +53,10 @@ class Main:
 
             # components
             self.game.run()
+            if self.game.exit_to_menu:
+                self.music.fadeout(1000)
+                return
+
             self.score.run()
             self.preview.run(self.next_shapes)
 

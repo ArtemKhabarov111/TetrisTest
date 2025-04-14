@@ -1,4 +1,5 @@
 import settings
+import db_manager
 from settings import *
 from random import choice
 from os import path, getcwd
@@ -9,6 +10,8 @@ class Game:
     def __init__(self, get_next_shape, update_score):
         # general
         self.game_over_active = None
+        self.new_high_score = False
+        self.exit_to_menu = False
         self.surface = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
         self.display_surface = pygame.display.get_surface()
         self.rect = self.surface.get_rect(topleft=(PADDING, PADDING))
@@ -60,12 +63,78 @@ class Game:
 
         self.update_score(self.current_lines, self.current_score, self.current_level)
 
+    def prompt_username(self):
+        """Show a 'New High Score!' screen, collect up to 15 chars, then save."""
+        for t in self.timers.values():
+            t.deactivate()
+        pygame.event.clear()
+
+        font_large = pygame.font.Font(path.join(getcwd(), "graphics", FONT), 64)
+        font_small = pygame.font.Font(path.join(getcwd(), "graphics", FONT), 32)
+
+        overlay = pygame.Surface(self.display_surface.get_size())
+        overlay.fill("black")
+
+        input_text = ""
+        active = True
+        while active:
+            for evt in pygame.event.get():
+                if evt.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                if evt.type == pygame.KEYDOWN:
+                    if evt.key == pygame.K_BACKSPACE:
+                        input_text = input_text[:-1]
+                    elif evt.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                        if input_text:
+                            active = False
+                    else:
+                        if len(input_text) < 15 and evt.unicode.isprintable():
+                            input_text += evt.unicode
+
+            self.display_surface.blit(overlay, (0, 0))
+
+            title_surf = font_large.render("New High Score!", True, "white")
+            prompt_surf = font_small.render("Enter your Username:", True, "white")
+            entry_surf = font_small.render(input_text + "_", True, "white")
+
+            # Render stats like in Game Over screen
+            score_text = font_small.render(f"Score: {self.current_score}", True, "white")
+            level_text = font_small.render(f"Level: {self.current_level}", True, "white")
+            lines_text = font_small.render(f"Lines: {self.current_lines}", True, "white")
+
+            cx = self.display_surface.get_width() // 2
+            cy = self.display_surface.get_height() // 2
+
+            # Blit elements
+            self.display_surface.blit(title_surf, title_surf.get_rect(center=(cx, cy - 100)))
+            self.display_surface.blit(prompt_surf, prompt_surf.get_rect(center=(cx, cy - 50)))
+            self.display_surface.blit(entry_surf, entry_surf.get_rect(center=(cx, cy)))
+            self.display_surface.blit(score_text, score_text.get_rect(center=(cx, cy + 50)))
+            self.display_surface.blit(level_text, level_text.get_rect(center=(cx, cy + 100)))
+            self.display_surface.blit(lines_text, lines_text.get_rect(center=(cx, cy + 150)))
+
+            pygame.display.update()
+
+        db_manager.insert_score(input_text, self.current_score, self.current_level, self.current_lines)
+
     def check_game_over(self):
         for block in self.tetromino.blocks:
             if block.pos.y < 0:
                 self.game_over_active = True  # Set a flag indicating game over
-                self.game_over_screen()
-                self.restart_game()
+
+                # compare to DB high score
+                highest = db_manager.get_high_score()
+                if self.current_score > highest:
+                    # prompt for name and save
+                    self.new_high_score = True
+                    self.prompt_username()
+                    # after saving, we'll return to menu
+                    self.exit_to_menu = True
+                else:
+                    # regular game over
+                    self.game_over_screen()
+                    self.restart_game()
                 break
 
     def game_over_screen(self):
@@ -332,7 +401,8 @@ class Tetromino:
 class Block(pygame.sprite.Sprite):
     def __init__(self, group, pos, block):
         super().__init__(group)
-        self.image = pygame.image.load(path.join(getcwd(), "graphics", f"skin{settings.SKIN}", f"{block}.png")).convert_alpha()
+        self.image = (pygame.image.load(path.join(getcwd(), "graphics", f"skin{settings.SKIN}", f"{block}.png")).
+                      convert_alpha())
         self.image = pygame.transform.scale(self.image, (CELL_SIZE, CELL_SIZE))
         # Positioning
         self.pos = pygame.Vector2(pos) + BLOCK_OFFSET

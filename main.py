@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import sys
+import db_manager
 from os import path, getcwd
 import settings  # Import the settings module to update SKIN
 from settings import *  # Import constants like PADDING, BLUE, GREEN, GRAY, OUTLINE_COLOR, etc.
@@ -12,6 +13,7 @@ GAME_WIDTH = 660
 GAME_HEIGHT = 840
 
 pygame.init()
+db_manager.initialize_db()
 screen = pygame.display.set_mode((GAME_WIDTH, GAME_HEIGHT))
 pygame.display.set_caption("Tetris by IO-34 Artem Khabarov")
 clock = pygame.time.Clock()
@@ -143,7 +145,7 @@ def get_leaderboard():
     """Query the leaderboard table and return top 100 records sorted by score descending."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute("SELECT username, score, lines, level FROM leaderboard ORDER BY score DESC LIMIT 100")
+    cursor.execute("SELECT username, score, level, lines FROM leaderboard ORDER BY score DESC LIMIT 100")
     records = cursor.fetchall()
     conn.close()
     return records
@@ -203,8 +205,7 @@ def draw_leaderboard(surface, rect, scroll_offset):
 
     # Draw each row.
     for idx, record in enumerate(records):
-        username, score, lines, level = record
-        # The "place" is simply the rank (1-indexed)
+        username, score, level, lines = record
         place = str(idx + 1)
         row_values = [place, username, str(score), str(level), str(lines)]
         x_offset = x_start

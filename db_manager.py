@@ -16,35 +16,64 @@ def initialize_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL,
             score INTEGER NOT NULL,
-            lines INTEGER NOT NULL,
-            level INTEGER NOT NULL
+            level INTEGER NOT NULL,
+            lines INTEGER NOT NULL
         );
     """)
     conn.commit()
     conn.close()
 
 
-def insert_dummy_data():
+def get_high_score():
+    """
+    Return the highest score currently in the leaderboard,
+    or 0 if the table is empty.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT MAX(score) FROM leaderboard;")
+    result = cursor.fetchone()[0]
+    conn.close()
+    return result or 0
+
+
+def insert_score(username, score, lines, level):
+    """
+    Insert a new record into the leaderboard.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO leaderboard (username, score, level, lines) VALUES (?, ?, ?, ?);",
+        (username, score, lines, level)
+    )
+    conn.commit()
+    conn.close()
+
+
+def insert_test_data():
     dummy_records = [
-        ("PlayerOne", 500, 40, 5),
-        ("TetrisMaster", 1000, 65, 8),
-        ("BlockDropper", 1500, 35, 4),
-        ("SpeedyG", 2000, 50, 6),
-        ("ZShapeHero", 2500, 55, 7),
-        ("GreenHouse", 1000, 10, 2)
+        ("Sponge Bob", 7000, 4, 31),
+        ("Gary", 5000, 3, 21),
+        ("Patrick", 3500, 2, 17),
+        ("Bob the builder", 2100, 2, 15),
+        ("Sandy", 1500, 2, 11),
+        ("Squidward", 500, 1, 5),
+        ("Plankton", 700, 1, 7),
+        ("Newbie", 100, 1, 1)
     ]
     conn = get_connection()
     cursor = conn.cursor()
     cursor.executemany("""
-        INSERT INTO leaderboard (username, score, lines, level)
+        INSERT INTO leaderboard (username, score, level, lines)
         VALUES (?, ?, ?, ?);
     """, dummy_records)
     conn.commit()
     conn.close()
-    print("Dummy data inserted into leaderboard.")
+    print("Test data inserted into leaderboard.")
 
 
 if __name__ == "__main__":
     initialize_db()
-    insert_dummy_data()
-    print("Database initialized and leaderboard table populated with dummy data.")
+    insert_test_data()
+    print("Database initialized and leaderboard table populated with test data.")
