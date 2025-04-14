@@ -1,3 +1,4 @@
+import settings
 from settings import *
 from pygame.image import load
 from os import path, getcwd
@@ -11,7 +12,7 @@ class Preview:
         self.display_surface = pygame.display.get_surface()
 
         # shapes
-        self.shape_surfaces = {shape: load(path.join(getcwd(), "graphics", f"skin{SKIN}", f"{shape}.png"))
+        self.shape_surfaces = {shape: load(path.join(getcwd(), "graphics", f"skin{settings.SKIN}", f"{shape}.png"))
                                .convert_alpha() for shape in TETROMINOS.keys()}
 
         # image position data

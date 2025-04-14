@@ -87,12 +87,9 @@ skin_options = []
 
 
 def load_skin_options(top_field_rect):
-    """
-    Load skin images and create SkinOption objects placed in a 2x2 grid inside top_field_rect.
-    """
     options = []
     # Define available skin IDs (adjust if you have more skins)
-    available_skins = [1, 2, 3]
+    available_skins = [1, 2, 3, 4]
     # Calculate cell size for a 2x2 grid inside top_field_rect
     cell_width = top_field_rect.width / 2
     cell_height = top_field_rect.height / 2
@@ -123,8 +120,8 @@ def draw_fields(surface):
     field_height = (fields_area_height - PADDING) // 2
 
     # Define the top and bottom field rectangles.
-    top_field_rect = pygame.Rect(PADDING, fields_area_top, field_width, field_height)
-    bottom_field_rect = pygame.Rect(PADDING, fields_area_top + field_height + PADDING, field_width, field_height)
+    top_field_rect = pygame.Rect(PADDING, fields_area_top, field_width, field_height + 40)
+    bottom_field_rect = pygame.Rect(PADDING, fields_area_top + field_height + PADDING * 3, field_width, field_height-40)
 
     # Draw the top field (black with a white outline)
     pygame.draw.rect(surface, "black", top_field_rect)

@@ -1,3 +1,4 @@
+import settings
 from settings import *
 from random import choice
 from os import path, getcwd
@@ -331,7 +332,7 @@ class Tetromino:
 class Block(pygame.sprite.Sprite):
     def __init__(self, group, pos, block):
         super().__init__(group)
-        self.image = pygame.image.load(path.join(getcwd(), "graphics", f"skin{SKIN}", f"{block}.png")).convert_alpha()
+        self.image = pygame.image.load(path.join(getcwd(), "graphics", f"skin{settings.SKIN}", f"{block}.png")).convert_alpha()
         self.image = pygame.transform.scale(self.image, (CELL_SIZE, CELL_SIZE))
         # Positioning
         self.pos = pygame.Vector2(pos) + BLOCK_OFFSET

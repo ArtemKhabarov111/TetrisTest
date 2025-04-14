@@ -23,7 +23,7 @@ MOVE_WAIT_TIME = 200
 ROTATE_WAIT_TIME = 200
 BLOCK_OFFSET = pygame.Vector2(COLUMNS // 2, -2)
 
-# Skins for blocks (1, 2, 3). 2nd - my favourite
+# Skins for blocks (1, 2, 3, 4). 2nd - my favourite
 SKIN = 1
 
 # Colors
