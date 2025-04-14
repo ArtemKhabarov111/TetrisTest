@@ -26,6 +26,9 @@ BLOCK_OFFSET = pygame.Vector2(COLUMNS // 2, -2)
 # Skins for blocks (1, 2, 3, 4). 2nd - my favourite
 SKIN = 1
 
+# Font
+FONT = "SpecialGothicCondensedOne-Regular.ttf"
+
 # Colors
 YELLOW = '#f1e60d'
 RED = '#e51b20'

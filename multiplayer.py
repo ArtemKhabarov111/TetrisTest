@@ -83,8 +83,8 @@ class MultiplayerGame(Game):
             self.win_text = win_text  # Update only if provided
 
         # Create fonts
-        large_font = pygame.font.Font(path.join(getcwd(), "graphics", "Caveat-Bold.ttf"), 64)
-        small_font = pygame.font.Font(path.join(getcwd(), "graphics", "Caveat-Bold.ttf"), 32)
+        large_font = pygame.font.Font(path.join(getcwd(), "graphics", FONT), 64)
+        small_font = pygame.font.Font(path.join(getcwd(), "graphics", FONT), 32)
 
         # Render text surfaces normally (without alpha modifications)
         main_text = large_font.render(self.win_text, True, "white")

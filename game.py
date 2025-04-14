@@ -77,8 +77,8 @@ class Game:
         pygame.event.clear()
 
         # Create large and small fonts using Caveat-Bold.ttf
-        large_font = pygame.font.Font(path.join(getcwd(), "graphics", "Caveat-Bold.ttf"), 64)
-        small_font = pygame.font.Font(path.join(getcwd(), "graphics", "Caveat-Bold.ttf"), 32)
+        large_font = pygame.font.Font(path.join(getcwd(), "graphics", FONT), 64)
+        small_font = pygame.font.Font(path.join(getcwd(), "graphics", FONT), 32)
 
         # Render texts for game over and final stats
         game_over_text = large_font.render("Game Over", True, "white")

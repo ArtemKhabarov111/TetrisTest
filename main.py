@@ -1,8 +1,12 @@
+import sqlite3
 import os
 import sys
 from os import path, getcwd
 import settings  # Import the settings module to update SKIN
 from settings import *  # Import constants like PADDING, BLUE, GREEN, GRAY, OUTLINE_COLOR, etc.
+
+# Define your database file (update if necessary)
+DB_FILE = 'tetris_records.db'
 
 GAME_WIDTH = 660
 GAME_HEIGHT = 840
@@ -15,6 +19,7 @@ clock = pygame.time.Clock()
 # Global variable for currently equipped skin (default to 1)
 current_skin = 1
 settings.SKIN = current_skin  # ensure that settings.SKIN is updated
+leaderboard_scroll = 0
 
 
 # A simple button class for the menu
@@ -24,7 +29,7 @@ class Main:
         self.rect = pygame.Rect(rect)
         self.color = color
         self.hover_color = hover_color
-        self.font = pygame.font.Font(path.join(getcwd(), "graphics", "Caveat-Bold.ttf"), 48)
+        self.font = pygame.font.Font(path.join(getcwd(), "graphics", FONT), 48)
         self.text_surf = self.font.render(text, True, "WHITE")
         self.text_rect = self.text_surf.get_rect(center=self.rect.center)
 
@@ -60,7 +65,7 @@ class SkinOption:
         self.button_rect = pygame.Rect(0, 0, button_w, button_h)
         # Offset the button a few pixels from the image's edge.
         self.button_rect.bottomright = (self.image_rect.right, self.image_rect.bottom)
-        self.font = pygame.font.Font(path.join(getcwd(), "graphics", "Caveat-Bold.ttf"), 24)
+        self.font = pygame.font.Font(path.join(getcwd(), "graphics", FONT), 24)
 
     def draw(self, surface):
         # Draw the skin image
@@ -134,6 +139,91 @@ def draw_fields(surface):
     return top_field_rect, bottom_field_rect
 
 
+def get_leaderboard():
+    """Query the leaderboard table and return top 100 records sorted by score descending."""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT username, score, lines, level FROM leaderboard ORDER BY score DESC LIMIT 100")
+    records = cursor.fetchall()
+    conn.close()
+    return records
+
+
+def draw_leaderboard(surface, rect, scroll_offset):
+    """
+    Render the leaderboard inside the given rectangle.
+    scroll_offset: vertical offset (in pixels) to allow scrolling of content.
+    """
+    # ~~~~ FONTS & STYLING ~~~~
+    title_font = pygame.font.Font(path.join(getcwd(), "graphics", FONT), 36)
+    header_font = pygame.font.Font(path.join(getcwd(), "graphics", FONT), 30)
+    row_font = pygame.font.Font(path.join(getcwd(), "graphics", FONT), 24)
+
+    # Fetch records
+    records = get_leaderboard()
+
+    # Prepare column definitions.
+    # Note: adjust widths as needed. Total width = 80 + 200 + 120 + 120 + 120 = 640.
+    columns = [
+        {"header": "Place", "width": 80},
+        {"header": "Username", "width": 200},
+        {"header": "Score", "width": 120},
+        {"header": "Level", "width": 100},
+        {"header": "Lines", "width": 100},
+    ]
+
+    # Use a clipping region so drawing is constrained inside rect.
+    prev_clip = surface.get_clip()
+    surface.set_clip(rect)
+
+    # Calculate base y-coordinates for title, headers and rows.
+    # The content is drawn relative to the top of the leaderboard area (rect.y)
+    base_y = rect.y
+    title_text = title_font.render("Leaderboard", True, "WHITE")
+    title_rect = title_text.get_rect(center=(rect.centerx, base_y + 25))
+    # Draw title (it will scroll along with the table)
+    surface.blit(title_text, (title_rect.x, title_rect.y - scroll_offset))
+
+    header_y = title_rect.bottom
+    x_start = rect.x + 15  # left margin for table columns
+
+    # Draw headers for each column
+    x_offset = x_start
+    for col in columns:
+        header_surf = header_font.render(col["header"], True, "WHITE")
+        # Create a rectangle for the column area.
+        col_rect = pygame.Rect(x_offset, header_y - scroll_offset, col["width"], header_surf.get_height())
+        header_rect = header_surf.get_rect(center=col_rect.center)
+        surface.blit(header_surf, header_rect)
+        x_offset += col["width"]
+
+    # Define row drawing parameters.
+    row_height = 40
+    row_y = header_y + row_height  # the first row’s top y-position
+
+    # Draw each row.
+    for idx, record in enumerate(records):
+        username, score, lines, level = record
+        # The "place" is simply the rank (1-indexed)
+        place = str(idx + 1)
+        row_values = [place, username, str(score), str(level), str(lines)]
+        x_offset = x_start
+        for i, val in enumerate(row_values):
+            row_surf = row_font.render(val, True, "WHITE")
+            col_width = columns[i]["width"]
+            col_rect = pygame.Rect(x_offset, row_y - scroll_offset, col_width, row_surf.get_height())
+            row_text_rect = row_surf.get_rect(center=col_rect.center)
+            surface.blit(row_surf, row_text_rect)
+            x_offset += col_width
+        row_y += row_height
+
+    surface.set_clip(prev_clip)
+
+    # Return the total height of the drawn content (from base_y to last row).
+    total_height = row_y - base_y
+    return total_height
+
+
 def game_loop():
     global screen, current_skin, skin_options
     state = "menu"
@@ -161,10 +251,9 @@ def game_loop():
 
 
 def run_main_menu():
-    global current_skin, skin_options
+    global current_skin, skin_options, leaderboard_scroll
     while True:
-        screen.fill(GRAY)
-        # Handle events
+        # Process events first.
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -173,28 +262,43 @@ def run_main_menu():
                 return "singleplayer"
             if multiplayer_button.is_clicked(event):
                 return "multiplayer"
-            # Check if any skin option's equip button was clicked
+            # Check skin option clicks.
             for option in skin_options:
                 if option.handle_event(event):
                     current_skin = option.skin_id
-                    settings.SKIN = current_skin  # Update the settings variable so in-game skin changes.
+                    settings.SKIN = current_skin
+            # Handle mouse wheel events for scrolling the leaderboard.
+            # Note: event.button 4 is scroll-up; event.button 5 is scroll-down.
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                # We use pygame.mouse.get_pos() to determine if the cursor is in the leaderboard area.
+                mouse_x, mouse_y = event.pos
+                # Use bottom_field_rect (which will be drawn below) for the scrollable area.
+                # Here, we assume bottom_field_rect is computed in each loop iteration.
+                # If the mouse is inside the bottom field, update the scroll offset.
+                top_field_rect, bottom_field_rect = draw_fields(screen)
+                if bottom_field_rect.collidepoint(mouse_x, mouse_y):
+                    if event.button == 4:  # Scroll up
+                        leaderboard_scroll = max(leaderboard_scroll - 20, 0)
+                    elif event.button == 5:  # Scroll down; first, compute total content height.
+                        total_content_height = draw_leaderboard(screen, bottom_field_rect, leaderboard_scroll)
+                        max_scroll = max(total_content_height - bottom_field_rect.height, 0)
+                        leaderboard_scroll = min(leaderboard_scroll + 20, max_scroll)
 
-        # Draw the menu buttons
+        # Now draw the screen.
+        screen.fill(GRAY)
+        # Draw the menu buttons.
         singleplayer_button.draw(screen)
         multiplayer_button.draw(screen)
 
-        # Draw the additional fields
+        # Draw additional fields.
         top_field_rect, bottom_field_rect = draw_fields(screen)
-
-        # If skin options are not loaded yet, load them into a 2x2 grid inside the top field.
         if not skin_options:
             skin_options = load_skin_options(top_field_rect)
-
-        # Draw each skin option (image + equip button)
         for option in skin_options:
             option.draw(screen)
 
-        # (Optional) You can add content to the bottom field if needed.
+        # Draw the leaderboard using the current scroll offset.
+        total_content_height = draw_leaderboard(screen, bottom_field_rect, leaderboard_scroll)
 
         pygame.display.update()
         clock.tick(60)
