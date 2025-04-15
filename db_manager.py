@@ -9,6 +9,7 @@ def get_connection():
 
 
 def initialize_db():
+    # Create leaderboard table if it doesn't exist
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -71,6 +72,7 @@ def insert_test_data():
     print("Test data inserted into leaderboard.")
 
 
+# Run this file to initialize leaderboard with test data
 if __name__ == "__main__":
     initialize_db()
     insert_test_data()

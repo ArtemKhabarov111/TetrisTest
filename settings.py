@@ -43,7 +43,7 @@ GRAY = '#1C1C1C'
 LINE_COLOR = '#606060'
 OUTLINE_COLOR = '#A0A0A0'
 
-# shapes
+# Shapes
 TETROMINOS = {
 	'T': {'shape': [(0, 0), (-1, 0), (1, 0), (0, -1)], 'tetromino': 'T', 'color': 'block_T'},
 	'O': {'shape': [(0, 0), (0, -1), (1, 0), (1, -1)], 'tetromino': 'O', 'color': 'block_O'},

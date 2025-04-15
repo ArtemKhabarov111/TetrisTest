@@ -197,6 +197,7 @@ class Multiplayer:
         self.score2 = Score()
         self.preview2 = Preview()
 
+
         # Position the side panels relative to each player's area.
         # The playfield is drawn starting at (area.x + PADDING, area.y + PADDING) with size GAME_WIDTH x GAME_HEIGHT.
         # Place the sidebar to the right of the playfield with an extra PADDING gap.
