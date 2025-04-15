@@ -9,7 +9,7 @@ from os import path, getcwd
 
 class Game:
     def __init__(self, get_next_shape, update_score):
-        # general
+        # General
         self.game_over_active = None
         self.new_high_score = False
         self.exit_to_menu = False
@@ -17,13 +17,13 @@ class Game:
         self.display_surface = pygame.display.get_surface()
         self.rect = self.surface.get_rect(topleft=(PADDING, PADDING))
         self.sprites = pygame.sprite.Group()
-        self.ghost_images = {}  # Use a dict keyed by tetromino color name or type
+        self.ghost_images = {}
 
-        # game connection
+        # Game connection
         self.get_next_shape = get_next_shape
         self.update_score = update_score
 
-        # tetromino
+        # Tetromino
         self.field_data = [[0 for _ in range(COLUMNS)] for _ in range(ROWS)]
         self.tetromino = Tetromino(
             choice(list(TETROMINOS.keys())),
@@ -31,7 +31,7 @@ class Game:
             self.create_new_tetromino,
             self.field_data)
 
-        # timer
+        # Timer
         self.down_speed = UPDATE_START_SPEED
         self.down_speed_faster = self.down_speed * 0.1
         self.down_pressed = False
@@ -44,17 +44,16 @@ class Game:
 
         self.timers["vertical move"].activate()
 
-        # score
+        # Score
         self.current_level = 1
         self.current_score = 0
         self.current_lines = 0
 
-        # sound
+        # Sound
         self.landing_sound = pygame.mixer.Sound(path.join(getcwd(), "sounds", "landing.wav"))
         self.landing_sound.set_volume(0.08)
 
     def get_ghost_image(self, color):
-        # Check if we already cached a ghost image for that color.
         if color not in self.ghost_images:
             img = pygame.image.load(
                 path.join(getcwd(), "graphics", f"skin{settings.SKIN}", f"{color}.png")
@@ -118,12 +117,12 @@ class Game:
             prompt_surf = font_small.render("Enter your Username:", True, "white")
             entry_surf = font_small.render(input_text + "_", True, "white")
 
-            # Render stats like in Game Over screen
+            # Render stats
             score_text = font_small.render(f"Score: {self.current_score}", True, "white")
             level_text = font_small.render(f"Level: {self.current_level}", True, "white")
             lines_text = font_small.render(f"Lines: {self.current_lines}", True, "white")
 
-            # Compute center of display for positioning
+            # Calculate the center of display
             cx = self.display_surface.get_width() // 2
             cy = self.display_surface.get_height() // 2
 
@@ -142,18 +141,19 @@ class Game:
     def check_game_over(self):
         for block in self.tetromino.blocks:
             if block.pos.y < 0:
-                self.game_over_active = True  # Set a flag indicating game over
+                self.game_over_active = True  # Set game over flag
 
-                # compare with DB high score
+                # Compare with DB high score
                 highest = db_manager.get_high_score()
                 if self.current_score > highest:
-                    # prompt for name and save
+                    # Prompt for name and save
                     self.new_high_score = True
                     self.prompt_username()
-                    # return to menu after saving record
+
+                    # Return to menu after saving record
                     self.exit_to_menu = True
                 else:
-                    # regular game over
+                    # Standard game over screen
                     self.game_over_screen()
                     self.restart_game()
                 break
@@ -163,7 +163,7 @@ class Game:
         for timer in self.timers.values():
             timer.deactivate()
 
-        # Clear any queued events to avoid processing unwanted input
+        # Clear any queued events
         pygame.event.clear()
 
         # Create large and small fonts
@@ -218,14 +218,14 @@ class Game:
         # Reset the flag
         self.game_over_active = False
 
-        # Reset game state:
+        # Reset game state
         self.field_data = [[0 for _ in range(COLUMNS)] for _ in range(ROWS)]
         self.sprites.empty()  # Remove all sprites from the group
 
-        # Ensure no lingering references to blocks
+        # Set all blocks to 0
         for row in self.field_data:
             for col in range(COLUMNS):
-                row[col] = 0  # Explicitly reset each cell to 0
+                row[col] = 0
 
         self.current_score = 0
         self.current_lines = 0
@@ -243,12 +243,12 @@ class Game:
             self.create_new_tetromino,
             self.field_data)
 
-        # Reinitialize timers:
+        # Reinitialize timers
         self.timers["vertical move"] = Timer(UPDATE_START_SPEED, True, self.move_down)
         self.timers["horizontal move"] = Timer(MOVE_WAIT_TIME * 0.3)
         self.timers["rotate"] = Timer(ROTATE_WAIT_TIME)
 
-        # Activate the vertical move timer
+        # Activate vertical move timer
         self.timers["vertical move"].activate()
 
     def create_new_tetromino(self):
@@ -280,13 +280,13 @@ class Game:
                 pygame.draw.rect(self.surface, LINE_COLOR, (x, y, CELL_SIZE, CELL_SIZE), 1)
 
     def input(self):
-        # If game is over, ignore inputs.
+        # Ignore inputs when the game is over
         if getattr(self, 'game_over_active', False):
             return
 
         keys = pygame.key.get_pressed()
 
-        # checking horizontal movement
+        # Check horizontal movement
         if not self.timers["horizontal move"].active:
             if keys[pygame.K_LEFT]:
                 self.tetromino.move_horizontal(-1)
@@ -296,13 +296,13 @@ class Game:
                 self.tetromino.move_horizontal(1)
                 self.timers["horizontal move"].activate()
 
-        # check for rotation
+        # Check rotation
         if not self.timers["rotate"].active:
             if keys[pygame.K_UP]:
                 self.tetromino.rotate()
                 self.timers["rotate"].activate()
 
-        # down speedup
+        # Down speedup
         if not self.down_pressed and keys[pygame.K_DOWN]:
             self.down_pressed = True
             self.timers["vertical move"].duration = self.down_speed_faster
@@ -338,12 +338,12 @@ class Game:
             self.calculate_score(len(delete_rows))
 
     def run(self):
-        # update
+        # Update
         self.input()
         self.timer_update()
         self.sprites.update()
 
-        # drawing
+        # Drawing
         self.surface.fill("black")
         self.draw_ghost()
         self.sprites.draw(self.surface)
@@ -355,7 +355,7 @@ class Game:
 
 class Tetromino:
     def __init__(self, shape, group, create_new_tetromino, field_data):
-        # setup
+        # Setup
         self.shape = shape
         self.block_positions = TETROMINOS[shape]["shape"]
         self.color = TETROMINOS[shape]["color"]
@@ -364,10 +364,10 @@ class Tetromino:
         self.ghost_positions = None
         self.needs_ghost_update = True
 
-        # create blocks
+        # Create blocks
         self.blocks = [Block(group, pos, self.color) for pos in self.block_positions]
 
-    # collisions
+    # Collisions
     def next_move_horizontal_collide(self, blocks, amount):
         collision_list = [block.horizontal_collide(int(block.pos.x + amount), self.field_data) for block in self.blocks]
         return True if any(collision_list) else False
@@ -376,7 +376,7 @@ class Tetromino:
         collision_list = [block.vertical_collide(int(block.pos.y + amount), self.field_data) for block in self.blocks]
         return True if any(collision_list) else False
 
-    # movement
+    # Movement
     def move_horizontal(self, amount):
         if not self.next_move_horizontal_collide(self.blocks, amount):
             for block in self.blocks:
@@ -399,19 +399,19 @@ class Tetromino:
     # rotate
     def rotate(self):
         if self.shape != "O":
-            # pivot point
+            # Pivot point
             pivot_pos = self.blocks[0].pos
 
-            # new block positions
+            # New block positions
             new_block_positions = [block.rotate(pivot_pos) for block in self.blocks]
 
-            # collision check
+            # Collision check
             for pos in new_block_positions:
-                # horizontal / wall check
+                # Horizontal / wall check
                 if pos.x < 0 or pos.x >= COLUMNS:
                     return
 
-                # vertical / floor check
+                # Vertical / floor check
                 if pos.y >= ROWS:
                     return
 
@@ -440,7 +440,7 @@ class Tetromino:
         return self.ghost_positions
 
     def get_max_drop_distance(self):
-        max_distance = ROWS  # start with a high number
+        max_distance = ROWS  # Start with a high number
         for block in self.blocks:
             distance = 0
             current_y = int(block.pos.y)
@@ -456,10 +456,11 @@ class Block(pygame.sprite.Sprite):
         self.image = (pygame.image.load(path.join(getcwd(), "graphics", f"skin{settings.SKIN}", f"{block}.png")).
                       convert_alpha())
         self.image = pygame.transform.scale(self.image, (CELL_SIZE, CELL_SIZE))
+
         # Positioning
         self.pos = pygame.Vector2(pos) + BLOCK_OFFSET
         self.rect = self.image.get_rect(topleft=self.pos * CELL_SIZE)
-        self.locked = False  # New attribute to mark a block as "placed" (locked)
+        self.locked = False
 
     def rotate(self, pivot_pos):
         return pivot_pos + (self.pos - pivot_pos).rotate(90)
