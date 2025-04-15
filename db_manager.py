@@ -1,6 +1,6 @@
 import sqlite3
 
-# Define the database file name
+# Name of DB
 DB_FILE = 'tetris_records.db'
 
 
@@ -25,10 +25,7 @@ def initialize_db():
 
 
 def get_high_score():
-    """
-    Return the highest score currently in the leaderboard,
-    or 0 if the table is empty.
-    """
+    # Return the highest score currently in the leaderboard or 0 if the table is empty
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT MAX(score) FROM leaderboard;")
@@ -38,9 +35,7 @@ def get_high_score():
 
 
 def insert_score(username, score, lines, level):
-    """
-    Insert a new record into the leaderboard.
-    """
+    # Insert a new record into the leaderboard
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
@@ -52,11 +47,14 @@ def insert_score(username, score, lines, level):
 
 
 def insert_test_data():
-    dummy_records = [
+    # Test records that will be displayed in the leaderboard
+    test_records = [
         ("Sponge Bob", 7000, 4, 31),
         ("Gary", 5000, 3, 21),
+        ("Darwin", 4800, 3, 24),
         ("Patrick", 3500, 2, 17),
-        ("Bob the builder", 2100, 2, 15),
+        ("Nicole", 2100, 2, 12),
+        ("Richard", 1700, 2, 12),
         ("Sandy", 1500, 2, 11),
         ("Squidward", 500, 1, 5),
         ("Plankton", 700, 1, 7),
@@ -67,7 +65,7 @@ def insert_test_data():
     cursor.executemany("""
         INSERT INTO leaderboard (username, score, level, lines)
         VALUES (?, ?, ?, ?);
-    """, dummy_records)
+    """, test_records)
     conn.commit()
     conn.close()
     print("Test data inserted into leaderboard.")

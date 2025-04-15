@@ -1,12 +1,12 @@
-from os import path, getcwd
-from random import choice
 import db_manager
 
-# components
-from game import Game
-from preview import Preview
-from score import Score
 from settings import *
+from game import Game
+from score import Score
+from preview import Preview
+
+from random import choice
+from os import path, getcwd
 
 
 class Main:

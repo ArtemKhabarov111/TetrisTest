@@ -1,7 +1,8 @@
 import settings
+
 from settings import *
-from pygame.image import load
 from os import path, getcwd
+from pygame.image import load
 
 
 class Preview:

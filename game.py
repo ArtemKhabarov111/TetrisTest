@@ -1,9 +1,10 @@
 import settings
 import db_manager
+
 from settings import *
+from timer import Timer
 from random import choice
 from os import path, getcwd
-from timer import Timer
 
 
 class Game:
@@ -16,6 +17,7 @@ class Game:
         self.display_surface = pygame.display.get_surface()
         self.rect = self.surface.get_rect(topleft=(PADDING, PADDING))
         self.sprites = pygame.sprite.Group()
+        self.ghost_images = {}  # Use a dict keyed by tetromino color name or type
 
         # game connection
         self.get_next_shape = get_next_shape
@@ -51,6 +53,24 @@ class Game:
         self.landing_sound = pygame.mixer.Sound(path.join(getcwd(), "sounds", "landing.wav"))
         self.landing_sound.set_volume(0.08)
 
+    def get_ghost_image(self, color):
+        # Check if we already cached a ghost image for that color.
+        if color not in self.ghost_images:
+            img = pygame.image.load(
+                path.join(getcwd(), "graphics", f"skin{settings.SKIN}", f"{color}.png")
+            ).convert_alpha()
+            img = pygame.transform.scale(img, (CELL_SIZE, CELL_SIZE))
+            img.set_alpha(GHOST_BLOCK_TRANSPARENCY)
+            self.ghost_images[color] = img
+        return self.ghost_images[color]
+
+    def draw_ghost(self):
+        ghost_positions = self.tetromino.get_ghost_positions()
+        ghost_image = self.get_ghost_image(self.tetromino.color)
+        for pos in ghost_positions:
+            draw_pos = (int(pos.x * CELL_SIZE), int(pos.y * CELL_SIZE))
+            self.surface.blit(ghost_image, draw_pos)
+
     def calculate_score(self, num_lines):
         self.current_lines += num_lines
         self.current_score += SCORE_DATA[num_lines] * self.current_level
@@ -64,7 +84,7 @@ class Game:
         self.update_score(self.current_lines, self.current_score, self.current_level)
 
     def prompt_username(self):
-        """Show a 'New High Score!' screen, collect up to 15 chars, then save."""
+        # Show a "New high score" screen
         for t in self.timers.values():
             t.deactivate()
         pygame.event.clear()
@@ -103,6 +123,7 @@ class Game:
             level_text = font_small.render(f"Level: {self.current_level}", True, "white")
             lines_text = font_small.render(f"Lines: {self.current_lines}", True, "white")
 
+            # Compute center of display for positioning
             cx = self.display_surface.get_width() // 2
             cy = self.display_surface.get_height() // 2
 
@@ -123,13 +144,13 @@ class Game:
             if block.pos.y < 0:
                 self.game_over_active = True  # Set a flag indicating game over
 
-                # compare to DB high score
+                # compare with DB high score
                 highest = db_manager.get_high_score()
                 if self.current_score > highest:
                     # prompt for name and save
                     self.new_high_score = True
                     self.prompt_username()
-                    # after saving, we'll return to menu
+                    # return to menu after saving record
                     self.exit_to_menu = True
                 else:
                     # regular game over
@@ -138,14 +159,14 @@ class Game:
                 break
 
     def game_over_screen(self):
-        # Deactivate all timers immediately to prevent lingering callbacks.
+        # Deactivate all timers
         for timer in self.timers.values():
             timer.deactivate()
 
-        # Clear any queued events to avoid processing unwanted input.
+        # Clear any queued events to avoid processing unwanted input
         pygame.event.clear()
 
-        # Create large and small fonts using Caveat-Bold.ttf
+        # Create large and small fonts
         large_font = pygame.font.Font(path.join(getcwd(), "graphics", FONT), 64)
         small_font = pygame.font.Font(path.join(getcwd(), "graphics", FONT), 32)
 
@@ -324,6 +345,7 @@ class Game:
 
         # drawing
         self.surface.fill("black")
+        self.draw_ghost()
         self.sprites.draw(self.surface)
 
         self.draw_grid()
@@ -339,6 +361,8 @@ class Tetromino:
         self.color = TETROMINOS[shape]["color"]
         self.create_new_tetromino = create_new_tetromino
         self.field_data = field_data
+        self.ghost_positions = None
+        self.needs_ghost_update = True
 
         # create blocks
         self.blocks = [Block(group, pos, self.color) for pos in self.block_positions]
@@ -357,11 +381,13 @@ class Tetromino:
         if not self.next_move_horizontal_collide(self.blocks, amount):
             for block in self.blocks:
                 block.pos.x += amount
+            self.needs_ghost_update = True
 
     def move_down(self):
         if not self.next_move_vertical_collide(self.blocks, 1):
             for block in self.blocks:
                 block.pos.y += 1
+            self.needs_ghost_update = True
         else:
             # When locking, only add blocks with y >= 0 and mark them as locked.
             for block in self.blocks:
@@ -397,6 +423,32 @@ class Tetromino:
             for i, block in enumerate(self.blocks):
                 block.pos = new_block_positions[i]
 
+            # Update ghost block position
+            self.needs_ghost_update = True
+
+    def get_ghost_positions(self):
+        if not self.needs_ghost_update and self.ghost_positions:
+            return self.ghost_positions
+        drop_distance = self.get_max_drop_distance()
+        ghost_positions = []
+        for block in self.blocks:
+            pos = block.pos.copy()
+            pos.y += drop_distance  # Increment y by drop_distance
+            ghost_positions.append(pos)
+        self.ghost_positions = ghost_positions
+        self.needs_ghost_update = False
+        return self.ghost_positions
+
+    def get_max_drop_distance(self):
+        max_distance = ROWS  # start with a high number
+        for block in self.blocks:
+            distance = 0
+            current_y = int(block.pos.y)
+            while current_y + distance + 1 < ROWS and not self.field_data[current_y + distance + 1][int(block.pos.x)]:
+                distance += 1
+            max_distance = min(max_distance, distance)
+        return max_distance
+
 
 class Block(pygame.sprite.Sprite):
     def __init__(self, group, pos, block):
@@ -426,8 +478,7 @@ class Block(pygame.sprite.Sprite):
             return True
 
     def update(self):
-        # If the block is locked (i.e. part of the field) but its y is negative,
-        # kill it to avoid ghost blocks (this happens when negative indexing occurs).
+        # Killing blocks that are out of bounds to prevent ghost blocks
         if self.locked and self.pos.y < 0:
             self.kill()
         else:

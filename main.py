@@ -1,10 +1,11 @@
-import sqlite3
 import os
 import sys
+import sqlite3
+import settings
 import db_manager
+
+from settings import *
 from os import path, getcwd
-import settings  # Import the settings module to update SKIN
-from settings import *  # Import constants like PADDING, BLUE, GREEN, GRAY, OUTLINE_COLOR, etc.
 
 # Define your database file (update if necessary)
 DB_FILE = 'tetris_records.db'

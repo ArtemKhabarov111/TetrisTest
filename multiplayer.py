@@ -10,10 +10,6 @@ from timer import Timer
 
 
 class MultiplayerGame(Game):
-    """
-    A subclass of Game that supports drawing within a specified area and
-    uses custom controls.
-    """
     def __init__(self, get_next_shape, update_score, area_rect, controls):
         # Initialize singleplayer game components
         super().__init__(get_next_shape, update_score)
@@ -58,11 +54,6 @@ class MultiplayerGame(Game):
             self.timers["vertical move"].duration = self.down_speed
 
     def run(self):
-        """
-        Called every frame. If active, processes input, updates timers,
-        and draws the playfield into the designated area.
-        Note: This method does not draw the game over overlay.
-        """
         if not self.game_over_active:
             self.input()
             self.timer_update()
@@ -120,10 +111,6 @@ class MultiplayerGame(Game):
                                                   self.area_rect.y + continue_rect.y))
 
     def check_game_over(self):
-        """
-        Checks if any block of the tetromino has reached above the visible area.
-        When game over is detected, sets the flag and stops timers.
-        """
         for block in self.tetromino.blocks:
             if block.pos.y < 0:
                 self.game_over_active = True
@@ -147,9 +134,6 @@ class MultiplayerGame(Game):
         )
 
     def restart_game(self):
-        """
-        Reset the game state for a new game.
-        """
         self.game_over_active = False
         self.field_data = [[0 for _ in range(COLUMNS)] for _ in range(ROWS)]
         self.sprites.empty()
@@ -176,15 +160,9 @@ class MultiplayerGame(Game):
 
 
 class Multiplayer:
-    """
-    The Multiplayer class manages two player instances. Each player has its own playfield,
-    preview, and score panel. A 50px gap separates the two player areas.
-    """
     def __init__(self):
         pygame.init()
 
-        # Mimic singleplayer layout for each player's area:
-        # Total width = GAME_WIDTH + SIDEBAR_WIDTH + 3*PADDING, height = GAME_HEIGHT + 2*PADDING.
         player_area_width = GAME_WIDTH + SIDEBAR_WIDTH + 3 * PADDING
         player_area_height = GAME_HEIGHT + 2 * PADDING
 

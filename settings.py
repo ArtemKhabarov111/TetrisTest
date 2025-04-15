@@ -4,26 +4,28 @@ import pygame
 COLUMNS = 10
 ROWS = 20
 CELL_SIZE = 40
-GAME_WIDTH, GAME_HEIGHT = COLUMNS * CELL_SIZE, ROWS * CELL_SIZE
+GAME_WIDTH = COLUMNS * CELL_SIZE
+GAME_HEIGHT = ROWS * CELL_SIZE
 
-# sidebar size
+# Sidebar size
 SIDEBAR_WIDTH = 200
 PREVIEW_HEIGHT_FRACTION = 0.7
 SCORE_HEIGHT_FRACTION = 1 - PREVIEW_HEIGHT_FRACTION
 
-# window
+# Window size
 PADDING = 20
 WINDOW_WIDTH = GAME_WIDTH + SIDEBAR_WIDTH + PADDING * 3
 WINDOW_HEIGHT = GAME_HEIGHT + PADDING * 2
 
-# game behaviour
+# Game behaviour
 FPS = 165
 UPDATE_START_SPEED = 600
 MOVE_WAIT_TIME = 200
 ROTATE_WAIT_TIME = 200
 BLOCK_OFFSET = pygame.Vector2(COLUMNS // 2, -2)
+GHOST_BLOCK_TRANSPARENCY = 100
 
-# Skins for blocks (1, 2, 3, 4). 2nd - my favourite
+# Skins for blocks (1, 2, 3, 4)
 SKIN = 1
 
 # Font
@@ -52,4 +54,5 @@ TETROMINOS = {
 	'Z': {'shape': [(0, 0), (1, 0), (0, -1), (-1, -1)], 'tetromino': 'Z', 'color': 'block_Z'}
 }
 
+# Cleared rows: score you get
 SCORE_DATA = {1: 100, 2: 300, 3: 500, 4: 1000}
